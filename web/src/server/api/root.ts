@@ -16,6 +16,7 @@ import { sessionRouter } from "@/src/server/api/routers/sessions";
 import { promptRouter } from "@/src/features/prompts/server/routers/promptRouter";
 import { modelRouter } from "@/src/server/api/routers/models";
 import { evalRouter } from "@/src/features/evals/server/router";
+import { userSimulatorRouter } from "@/src/features/evals/server/userSimulatorRouter";
 import { posthogIntegrationRouter } from "@/src/features/posthog-integration/posthog-integration-router";
 import { mixpanelIntegrationRouter } from "@/src/features/mixpanel-integration/mixpanel-integration-router";
 import { blobStorageIntegrationRouter } from "@/src/features/blobstorage-integration/blobstorage-integration-router";
@@ -81,6 +82,7 @@ export const appRouter = createTRPCRouter({
   prompts: promptRouter,
   models: modelRouter,
   evals: evalRouter,
+  userSimulator: userSimulatorRouter,
   defaultLlmModel: defaultEvalModelRouter,
   experiments: experimentsRouter,
   posthogIntegration: posthogIntegrationRouter,

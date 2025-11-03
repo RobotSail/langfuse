@@ -55,6 +55,7 @@
     "jsonpath-plus": "10.3.0",
     "kysely": "^0.27.4",
     "lodash": "^4.17.21",
+    "openai": "^6.7.0",
     "pg": "^8.13.0",
     "posthog-node": "^5.8.4",
     "stripe": "^17.4.0",

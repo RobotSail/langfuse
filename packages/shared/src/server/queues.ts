@@ -196,6 +196,14 @@ export const NotificationEventSchema = z.discriminatedUnion("type", [
   // Future notification types can be added here
 ]);
 
+export const UserSimulatorEventSchema = z.object({
+  projectId: z.string(),
+  jobConfigId: z.string(),
+  datasetId: z.string(),
+  datasetItemIds: z.array(z.string()).optional(),
+  config: z.record(z.string(), z.any()), // UserSimulationEvalConfig as JSON
+});
+
 export const WebhookOutboundEnvelopeSchema = z.object({
   prompt: PromptDomainSchema,
   action: EventActionSchema,
@@ -260,6 +268,7 @@ export type DeadLetterRetryQueueEventType = z.infer<
   typeof DeadLetterRetryQueueEventSchema
 >;
 export type NotificationEventType = z.infer<typeof NotificationEventSchema>;
+export type UserSimulatorEventType = z.infer<typeof UserSimulatorEventSchema>;
 
 export const RetryBaggage = z.object({
   originalJobTimestamp: z.date(),
@@ -301,6 +310,7 @@ export enum QueueName {
   EntityChangeQueue = "entity-change-queue",
   EventPropagationQueue = "event-propagation-queue",
   NotificationQueue = "notification-queue",
+  UserSimulatorQueue = "user-simulator-queue",
 }
 
 export enum QueueJobs {
@@ -336,6 +346,7 @@ export enum QueueJobs {
   EntityChangeJob = "entity-change-job",
   EventPropagationJob = "event-propagation-job",
   NotificationJob = "notification-job",
+  UserSimulatorJob = "user-simulator-job",
 }
 
 export type TQueueJobTypes = {
@@ -491,5 +502,11 @@ export type TQueueJobTypes = {
     id: string;
     payload: NotificationEventType;
     name: QueueJobs.NotificationJob;
+  };
+  [QueueName.UserSimulatorQueue]: {
+    timestamp: Date;
+    id: string;
+    payload: UserSimulatorEventType;
+    name: QueueJobs.UserSimulatorJob;
   };
 };

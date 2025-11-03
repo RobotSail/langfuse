@@ -38,6 +38,7 @@ import { useEvaluatorDefaults } from "@/src/features/experiments/hooks/useEvalua
 import { useExperimentEvaluatorData } from "@/src/features/experiments/hooks/useExperimentEvaluatorData";
 import { EvaluatorForm } from "@/src/features/evals/components/evaluator-form";
 import useLocalStorage from "@/src/components/useLocalStorage";
+import { UserSimulatorButton } from "@/src/features/datasets/components/UserSimulatorButton";
 
 export default function Dataset() {
   const router = useRouter();
@@ -168,6 +169,11 @@ export default function Dataset() {
         },
         actionButtonsRight: (
           <>
+            <UserSimulatorButton
+              datasetId={datasetId}
+              projectId={projectId}
+            />
+
             <Dialog
               open={isCreateExperimentDialogOpen}
               onOpenChange={setIsCreateExperimentDialogOpen}
