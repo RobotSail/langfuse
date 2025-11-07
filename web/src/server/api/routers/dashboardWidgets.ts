@@ -49,18 +49,26 @@ function buildScoreFilterConditions(
       } else if (filter.type === "string" && filter.operator === "contains") {
         scoreFilters.push(`position(name, {scoreName${index}: String}) > 0`);
         params[`scoreName${index}`] = filter.value;
-      } else if (filter.type === "string" && filter.operator === "starts with") {
+      } else if (
+        filter.type === "string" &&
+        filter.operator === "starts with"
+      ) {
         scoreFilters.push(`startsWith(name, {scoreName${index}: String})`);
         params[`scoreName${index}`] = filter.value;
-      } else if (filter.type === "stringOptions" && filter.operator === "any of") {
+      } else if (
+        filter.type === "stringOptions" &&
+        filter.operator === "any of"
+      ) {
         scoreFilters.push(`name IN ({scoreNames${index}: Array(String)})`);
         params[`scoreNames${index}`] = filter.value;
       }
     }
 
     // Handle numeric score value filters (for numeric scores)
-    if (scoreValueColumns.includes(filter.column) && 
-        view === DashboardWidgetViews.SCORES_NUMERIC) {
+    if (
+      scoreValueColumns.includes(filter.column) &&
+      view === DashboardWidgetViews.SCORES_NUMERIC
+    ) {
       if (filter.type === "number") {
         switch (filter.operator) {
           case "=":
@@ -88,19 +96,27 @@ function buildScoreFilterConditions(
     }
 
     // Handle categorical score value filters
-    if (scoreStringValueColumns.includes(filter.column) &&
-        view === DashboardWidgetViews.SCORES_CATEGORICAL) {
+    if (
+      scoreStringValueColumns.includes(filter.column) &&
+      view === DashboardWidgetViews.SCORES_CATEGORICAL
+    ) {
       if (filter.type === "string" && filter.operator === "=") {
         scoreFilters.push(`string_value = {scoreStringValue${index}: String}`);
         params[`scoreStringValue${index}`] = filter.value;
-      } else if (filter.type === "stringOptions" && filter.operator === "any of") {
-        scoreFilters.push(`string_value IN ({scoreStringValues${index}: Array(String)})`);
+      } else if (
+        filter.type === "stringOptions" &&
+        filter.operator === "any of"
+      ) {
+        scoreFilters.push(
+          `string_value IN ({scoreStringValues${index}: Array(String)})`,
+        );
         params[`scoreStringValues${index}`] = filter.value;
       }
     }
   });
 
-  const whereClause = scoreFilters.length > 0 ? ` AND ${scoreFilters.join(" AND ")}` : "";
+  const whereClause =
+    scoreFilters.length > 0 ? ` AND ${scoreFilters.join(" AND ")}` : "";
   return { whereClause, params };
 }
 
@@ -357,11 +373,14 @@ export const dashboardWidgetRouter = createTRPCRouter({
       }
 
       // Build score filter conditions based on widget filters
-      const { whereClause: scoreWhereClause, params: scoreFilterParams } = 
+      const { whereClause: scoreWhereClause, params: scoreFilterParams } =
         buildScoreFilterConditions(widget.filters, widget.view);
 
       console.log(`[getSessions] Widget: ${widget.name}`);
-      console.log(`[getSessions] Widget filters:`, JSON.stringify(widget.filters));
+      console.log(
+        `[getSessions] Widget filters:`,
+        JSON.stringify(widget.filters),
+      );
       console.log(`[getSessions] Score WHERE clause: ${scoreWhereClause}`);
       console.log(`[getSessions] Score filter params:`, scoreFilterParams);
 
@@ -400,28 +419,36 @@ export const dashboardWidgetRouter = createTRPCRouter({
         query: sessionsQuery,
         params: {
           projectId: input.projectId,
-          fromTimestamp: convertDateToClickhouseDateTime(new Date(input.fromTimestamp)),
-          toTimestamp: convertDateToClickhouseDateTime(new Date(input.toTimestamp)),
+          fromTimestamp: convertDateToClickhouseDateTime(
+            new Date(input.fromTimestamp),
+          ),
+          toTimestamp: convertDateToClickhouseDateTime(
+            new Date(input.toTimestamp),
+          ),
           ...scoreFilterParams,
         },
       });
 
       const totalCount = allSessions.length;
-      
-      console.log(`[getSessions] Found ${totalCount} sessions with matching scores`);
-      
+
+      console.log(
+        `[getSessions] Found ${totalCount} sessions with matching scores`,
+      );
+
       if (totalCount === 0) {
-        console.log(`[getSessions] No sessions found with matching scores - returning empty result`);
+        console.log(
+          `[getSessions] No sessions found with matching scores - returning empty result`,
+        );
         return {
           sessions: [],
           totalCount: 0,
         };
       }
-      
+
       // Apply pagination
       const paginatedSessions = allSessions.slice(
         input.page * input.limit,
-        (input.page + 1) * input.limit
+        (input.page + 1) * input.limit,
       );
 
       // Fetch session metadata from PostgreSQL
@@ -442,7 +469,7 @@ export const dashboardWidgetRouter = createTRPCRouter({
       });
 
       const sessionsMetadataMap = new Map(
-        sessionsMetadata.map((s) => [s.id, s])
+        sessionsMetadata.map((s) => [s.id, s]),
       );
 
       // Calculate metrics for each session

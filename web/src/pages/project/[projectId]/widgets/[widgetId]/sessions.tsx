@@ -146,7 +146,9 @@ export default function WidgetSessionsPage() {
       id: "firstScoreTime",
       size: 150,
       cell: ({ row }) => {
-        return <span>{new Date(row.original.firstScoreTime).toLocaleString()}</span>;
+        return (
+          <span>{new Date(row.original.firstScoreTime).toLocaleString()}</span>
+        );
       },
     },
     {
@@ -212,7 +214,11 @@ export default function WidgetSessionsPage() {
             sessions.isLoading
               ? { isLoading: true, isError: false }
               : sessions.isError
-                ? { isLoading: false, isError: true, error: sessions.error.message }
+                ? {
+                    isLoading: false,
+                    isError: true,
+                    error: sessions.error.message,
+                  }
                 : {
                     isLoading: false,
                     isError: false,
@@ -230,5 +236,3 @@ export default function WidgetSessionsPage() {
     </Page>
   );
 }
-
-
