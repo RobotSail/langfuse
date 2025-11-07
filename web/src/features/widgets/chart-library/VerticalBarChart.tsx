@@ -46,7 +46,47 @@ export const VerticalBarChart: React.FC<ChartProps> = ({
         />
         <ChartTooltip
           contentStyle={{ backgroundColor: "hsl(var(--background))" }}
-          itemStyle={{ color: "hsl(var(--foreground))" }}
+          content={({ active, payload }) => {
+            if (!active || !payload || payload.length === 0) return null;
+
+            const data = payload[0]?.payload;
+            if (!data) return null;
+
+            return (
+              <div className="rounded-lg border bg-background p-2 shadow-sm">
+                <div className="grid gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-[0.70rem] uppercase text-muted-foreground">
+                      Value
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {typeof data.metric === "number"
+                        ? data.metric.toFixed(4)
+                        : data.metric}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[0.70rem] uppercase text-muted-foreground">
+                      Session ID
+                    </span>
+                    <span className="font-mono text-xs">
+                      {data.sessionId || "No Session attached"}
+                    </span>
+                  </div>
+                  {data.time_dimension && (
+                    <div className="flex flex-col">
+                      <span className="text-[0.70rem] uppercase text-muted-foreground">
+                        Timestamp
+                      </span>
+                      <span className="text-xs">
+                        {new Date(data.time_dimension).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }}
         />
       </BarChart>
     </ChartContainer>

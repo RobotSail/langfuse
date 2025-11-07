@@ -73,6 +73,7 @@ export const metricAggregations = z.enum([
   "p95",
   "p99",
   "histogram",
+  "none", // Raw values without aggregation
 ]);
 
 export const metric = z.object({

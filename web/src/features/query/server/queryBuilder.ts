@@ -62,6 +62,9 @@ export class QueryBuilder {
         // Get histogram bins from chart config, fallback to 10
         const bins = this.chartConfig?.bins ?? 10;
         return `histogram(${bins})(toFloat64(${metric.alias || metric.sql}))`;
+      case "none":
+        // Raw values without aggregation - just pass through
+        return `${metric.alias || metric.sql}`;
       default:
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const exhaustiveCheck: never = metric.aggregation;
@@ -485,34 +488,50 @@ export class QueryBuilder {
     appliedDimensions: AppliedDimensionType[],
     query: QueryType,
     view: ViewDeclarationType,
+    isRawData: boolean,
   ) {
     let dimensions = "";
 
     // Add regular dimensions
     if (appliedDimensions.length > 0) {
-      dimensions += `${appliedDimensions
-        .map(
-          (dimension) =>
-            `any(${dimension.sql}) as ${dimension.alias ?? dimension.sql}`,
-        )
-        .join(",\n")},`;
+      if (isRawData) {
+        // For raw data, don't use any() - just select the values directly
+        dimensions += `${appliedDimensions
+          .map(
+            (dimension) =>
+              `${dimension.sql} as ${dimension.alias ?? dimension.sql}`,
+          )
+          .join(",\n")},`;
+      } else {
+        dimensions += `${appliedDimensions
+          .map(
+            (dimension) =>
+              `any(${dimension.sql}) as ${dimension.alias ?? dimension.sql}`,
+          )
+          .join(",\n")},`;
+      }
     }
 
-    // Add time dimension if specified
-    if (query.timeDimension) {
-      const granularity =
-        query.timeDimension.granularity === "auto"
-          ? this.determineTimeGranularity(
-              query.fromTimestamp,
-              query.toTimestamp,
-            )
-          : query.timeDimension.granularity;
+    // Add time dimension if specified OR if this is raw data (for chronological ordering)
+    if (query.timeDimension || isRawData) {
+      if (isRawData) {
+        // For raw data, always include the raw timestamp for chronological ordering
+        dimensions += `${view.name}.${view.timeDimension} as time_dimension,`;
+      } else if (query.timeDimension) {
+        const granularity =
+          query.timeDimension.granularity === "auto"
+            ? this.determineTimeGranularity(
+                query.fromTimestamp,
+                query.toTimestamp,
+              )
+            : query.timeDimension.granularity;
 
-      const timeDimensionSql = this.getTimeDimensionSql(
-        `${view.name}.${view.timeDimension}`,
-        granularity,
-      );
-      dimensions += `any(${timeDimensionSql}) as time_dimension,`;
+        const timeDimensionSql = this.getTimeDimensionSql(
+          `${view.name}.${view.timeDimension}`,
+          granularity,
+        );
+        dimensions += `any(${timeDimensionSql}) as time_dimension,`;
+      }
     }
 
     return dimensions;
@@ -524,12 +543,30 @@ export class QueryBuilder {
       : "count(*) as count";
   }
 
+  private hasRawAggregation(appliedMetrics: AppliedMetricType[]): boolean {
+    return appliedMetrics.some((metric) => metric.aggregation === "none");
+  }
+
   private buildInnerSelect(
     view: ViewDeclarationType,
     innerDimensionsPart: string,
     innerMetricsPart: string,
     fromClause: string,
+    isRawData: boolean,
   ) {
+    if (isRawData) {
+      // For raw data, no GROUP BY - just select individual rows with a limit
+      const rowLimit = this.chartConfig?.row_limit ?? 10000;
+      return `
+      SELECT
+        ${view.name}.project_id,
+        ${view.name}.id,
+        ${innerDimensionsPart}
+        ${innerMetricsPart}
+        ${fromClause}
+      LIMIT ${rowLimit}`;
+    }
+
     return `
       SELECT
         ${view.name}.project_id,
@@ -573,7 +610,13 @@ export class QueryBuilder {
   private buildGroupByClause(
     appliedDimensions: AppliedDimensionType[],
     hasTimeDimension: boolean,
+    isRawData: boolean,
   ) {
+    // Skip GROUP BY for raw data queries
+    if (isRawData) {
+      return "";
+    }
+
     const dimensions = [];
 
     // Add regular dimensions
@@ -597,6 +640,7 @@ export class QueryBuilder {
    * Builds a WITH FILL clause for time dimension to ensure continuous time series data.
    * This fills in gaps in the time series with zero values based on the granularity.
    * Only applied if timeDimension is used and no ORDER BY is specified.
+   * Raw data queries skip WITH FILL since they don't use time bucketing.
    */
   private buildWithFillClause(
     timeDimension: {
@@ -606,6 +650,7 @@ export class QueryBuilder {
     toTimestamp: string,
     orderBy: Array<{ field: string; direction: string }> | null,
     parameters: Record<string, unknown>,
+    isRawData: boolean,
   ): string {
     if (!timeDimension) {
       return "";
@@ -613,6 +658,10 @@ export class QueryBuilder {
 
     if (orderBy && orderBy.length > 0) {
       return ""; // Skip WITH FILL if ORDER BY is specified
+    }
+
+    if (isRawData) {
+      return ""; // Skip WITH FILL for raw data queries - they use raw timestamps, not bucketed
     }
 
     // Determine granularity for WITH FILL if timeDimension is used
@@ -680,9 +729,15 @@ export class QueryBuilder {
     appliedDimensions: AppliedDimensionType[],
     appliedMetrics: AppliedMetricType[],
     hasTimeDimension: boolean,
+    isRawData: boolean,
   ): Array<{ field: string; direction: string }> {
     if (!orderBy || orderBy.length === 0) {
-      // Default order: time dimension if available, otherwise first metric, otherwise first dimension
+      // For raw data, always order by time_dimension chronologically (asc)
+      // This is now always available for raw data queries
+      if (isRawData) {
+        return [{ field: "time_dimension", direction: "asc" }];
+      }
+      // Default order for aggregated data: time dimension if available, otherwise first metric, otherwise first dimension
       if (hasTimeDimension) {
         return [{ field: "time_dimension", direction: "asc" }];
       } else if (appliedMetrics.length > 0) {
@@ -725,7 +780,7 @@ export class QueryBuilder {
 
       // Check if the field is a metric (with aggregation prefix)
       const metricNamePattern =
-        /^(sum|avg|count|max|min|p50|p75|p90|p95|p99)_(.+)$/;
+        /^(sum|avg|count|max|min|p50|p75|p90|p95|p99|none)_(.+)$/;
       const metricMatch = item.field.match(metricNamePattern);
 
       if (metricMatch) {
@@ -739,6 +794,17 @@ export class QueryBuilder {
         if (matchingMetric) {
           return item;
         }
+      }
+
+      // For raw data queries, also check if field matches a metric alias directly
+      const directMetricMatch = appliedMetrics.find(
+        (metric) =>
+          (metric.alias === item.field || metric.sql === item.field) &&
+          metric.aggregation === "none",
+      );
+
+      if (directMetricMatch) {
+        return item;
       }
 
       throw new InvalidRequestError(
@@ -806,6 +872,25 @@ export class QueryBuilder {
     const appliedDimensions = this.mapDimensions(query.dimensions, view);
     const appliedMetrics = this.mapMetrics(query.metrics, view);
 
+    // Check if this is a raw data query (no aggregation)
+    const isRawData = this.hasRawAggregation(appliedMetrics);
+
+    // For scores views, always auto-include sessionId for tooltips (if not already selected)
+    // This must happen BEFORE collectRelationTables so the traces table gets joined
+    // Works for both raw and aggregated queries - aggregated queries will use any(sessionId)
+    if (view.dimensions["sessionId"]) {
+      const alreadySelected = appliedDimensions.some(
+        (d) => d.alias === "sessionId" || d.sql.includes("sessionId"),
+      );
+      if (!alreadySelected) {
+        const sessionIdDim = view.dimensions["sessionId"];
+        appliedDimensions.push({
+          ...sessionIdDim,
+          table: sessionIdDim.relationTable || view.name,
+        });
+      }
+    }
+
     // Create a new FilterList with the mapped filters
     let filterList = new FilterList(this.mapFilters(query.filters, view));
 
@@ -846,6 +931,7 @@ export class QueryBuilder {
       appliedDimensions,
       query,
       view,
+      isRawData,
     );
     const innerMetricsPart = this.buildInnerMetricsPart(appliedMetrics);
 
@@ -855,17 +941,21 @@ export class QueryBuilder {
       innerDimensionsPart,
       innerMetricsPart,
       fromClause,
+      isRawData,
     );
 
     // Build outer SELECT parts
+    // For raw data, we always include time_dimension (for chronological ordering)
+    const hasTimeDimension = !!query.timeDimension || isRawData;
     const outerDimensionsPart = this.buildOuterDimensionsPart(
       appliedDimensions,
-      !!query.timeDimension,
+      hasTimeDimension,
     );
     const outerMetricsPart = this.buildOuterMetricsPart(appliedMetrics);
     const groupByClause = this.buildGroupByClause(
       appliedDimensions,
-      !!query.timeDimension,
+      hasTimeDimension,
+      isRawData,
     );
 
     // Process and validate orderBy fields
@@ -873,7 +963,8 @@ export class QueryBuilder {
       query.orderBy,
       appliedDimensions,
       appliedMetrics,
-      !!query.timeDimension,
+      hasTimeDimension,
+      isRawData,
     );
 
     // Build ORDER BY clause
@@ -886,6 +977,7 @@ export class QueryBuilder {
       query.toTimestamp,
       query.orderBy,
       parameters,
+      isRawData,
     );
 
     // Build final query
