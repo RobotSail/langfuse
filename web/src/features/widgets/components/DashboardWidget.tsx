@@ -15,6 +15,7 @@ import {
   CopyIcon,
   GripVerticalIcon,
   Loader2,
+  ExternalLinkIcon,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useHasProjectAccess } from "@/src/features/rbac/utils/checkProjectAccess";
@@ -223,6 +224,12 @@ export function DashboardWidget({
     }
   };
 
+  const handleViewExperiments = () => {
+    router.push(
+      `/project/${projectId}/widgets/${placement.widgetId}/sessions?dashboardId=${dashboardId}`,
+    );
+  };
+
   if (widget.isPending) {
     return (
       <div
@@ -305,11 +312,21 @@ export function DashboardWidget({
           )}
         </div>
       </div>
-      <div
-        className="mb-4 truncate text-sm text-muted-foreground"
-        title={widget.data.description}
-      >
-        {widget.data.description}
+      <div className="mb-2 flex items-center justify-between">
+        <div
+          className="truncate text-sm text-muted-foreground"
+          title={widget.data.description}
+        >
+          {widget.data.description}
+        </div>
+        <button
+          onClick={handleViewExperiments}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          aria-label="View experiments"
+        >
+          <span>See Details</span>
+          <ExternalLinkIcon size={12} />
+        </button>
       </div>
       <div className="min-h-0 flex-1">
         <Chart
