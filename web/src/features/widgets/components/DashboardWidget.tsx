@@ -143,7 +143,9 @@ export function DashboardWidget({
     if (!widget.data || !queryResult.data) {
       return [];
     }
-    return queryResult.data.map((item: any) => {
+    console.log("DashboardWidget raw query results:", queryResult.data);
+
+    const transformed = queryResult.data.map((item: any) => {
       if (widget.data.chartType === "PIVOT_TABLE") {
         // For pivot tables, preserve all raw data fields without any transformation
         // The PivotTable component will extract the appropriate metric fields
@@ -170,25 +172,42 @@ export function DashboardWidget({
 
       const dimensionField =
         widget.data.dimensions.slice().shift()?.field ?? "none";
+
+      // Determine dimension value
+      let dimensionValue: string | undefined;
+
+      if (item[dimensionField] !== undefined && dimensionField !== "none") {
+        // Has explicit dimension field
+        const val = item[dimensionField];
+        if (typeof val === "string") dimensionValue = val;
+        else if (val === null || val === undefined || val === "")
+          dimensionValue = "n/a";
+        else if (Array.isArray(val)) dimensionValue = val.join(", ");
+        else dimensionValue = String(val);
+      } else if (metric.agg === "none") {
+        // Raw data - use timestamp if available
+        if (item["time_dimension"]) {
+          const date = new Date(item["time_dimension"]);
+          dimensionValue = date.toLocaleString();
+        }
+      } else {
+        // Aggregated data without dimension
+        dimensionValue = formatMetricName(metricField);
+      }
+
       return {
-        dimension:
-          item[dimensionField] !== undefined
-            ? (() => {
-                const val = item[dimensionField];
-                if (typeof val === "string") return val;
-                if (val === null || val === undefined || val === "")
-                  return "n/a";
-                if (Array.isArray(val)) return val.join(", ");
-                // Objects / numbers / booleans are stringified to avoid React key issues
-                return String(val);
-              })()
-            : formatMetricName(metricField),
+        dimension: dimensionValue,
         metric: Array.isArray(metricValue)
           ? metricValue
           : Number(metricValue || 0),
         time_dimension: item["time_dimension"],
+        // Always include sessionId from query results if available (for tooltips)
+        sessionId: item["sessionId"] ? String(item["sessionId"]) : undefined,
       };
     });
+
+    console.log("DashboardWidget transformed data:", transformed);
+    return transformed;
   }, [queryResult.data, widget.data]);
 
   const handleEdit = () => {

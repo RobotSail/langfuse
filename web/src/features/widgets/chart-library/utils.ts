@@ -8,14 +8,25 @@ import { type DashboardWidgetChartType } from "@langfuse/shared/src/db";
 export const groupDataByTimeDimension = (data: DataPoint[]) => {
   // First, group by time_dimension
   const timeGroups = data.reduce(
-    (acc: Record<string, Record<string, number>>, item: DataPoint) => {
+    (
+      acc: Record<
+        string,
+        { dimensions: Record<string, number>; sessionId?: string }
+      >,
+      item: DataPoint,
+    ) => {
       const time = item.time_dimension || "Unknown";
       if (!acc[time]) {
-        acc[time] = {};
+        acc[time] = { dimensions: {} };
       }
 
       const dimension = item.dimension || "Unknown";
-      acc[time][dimension] = item.metric as number;
+      acc[time].dimensions[dimension] = item.metric as number;
+
+      // Preserve sessionId if available (for aggregated data tooltips)
+      if (item.sessionId) {
+        acc[time].sessionId = item.sessionId;
+      }
 
       return acc;
     },
@@ -23,9 +34,10 @@ export const groupDataByTimeDimension = (data: DataPoint[]) => {
   );
 
   // Convert to array format for Recharts
-  return Object.entries(timeGroups).map(([time, dimensions]) => ({
+  return Object.entries(timeGroups).map(([time, data]) => ({
     time_dimension: time,
-    ...dimensions,
+    sessionId: data.sessionId,
+    ...data.dimensions,
   }));
 };
 

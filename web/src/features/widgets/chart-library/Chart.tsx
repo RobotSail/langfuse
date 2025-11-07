@@ -7,6 +7,7 @@ import HorizontalBarChart from "@/src/features/widgets/chart-library/HorizontalB
 import VerticalBarChart from "@/src/features/widgets/chart-library/VerticalBarChart";
 import PieChart from "@/src/features/widgets/chart-library/PieChart";
 import HistogramChart from "@/src/features/widgets/chart-library/HistogramChart";
+import ScatterPlot from "@/src/features/widgets/chart-library/ScatterPlot";
 import { type DashboardWidgetChartType } from "@langfuse/shared/src/db";
 import { Button } from "@/src/components/ui/button";
 import { AlertCircle } from "lucide-react";
@@ -92,6 +93,9 @@ export const Chart = ({
             isLoading={isLoading}
           />
         );
+      }
+      case "SCATTER_PLOT": {
+        return <ScatterPlot data={renderedData} />;
       }
       default:
         return <HorizontalBarChart data={renderedData.slice(0, rowLimit)} />;

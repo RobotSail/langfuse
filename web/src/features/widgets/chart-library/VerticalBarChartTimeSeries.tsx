@@ -25,12 +25,50 @@ export const VerticalBarChartTimeSeries: React.FC<ChartProps> = ({
   },
   accessibilityLayer = true,
 }) => {
-  const groupedData = useMemo(() => groupDataByTimeDimension(data), [data]);
-  const dimensions = useMemo(() => getUniqueDimensions(data), [data]);
+  console.log("VerticalBarChartTimeSeries received data:", data);
+
+  // Check if this is raw/unaggregated data (dimension field is a timestamp or doesn't exist)
+  const isRawData = useMemo(() => {
+    if (data.length === 0) return false;
+    const firstItem = data[0];
+    // Raw data has dimension as a formatted timestamp string or no meaningful dimension
+    return (
+      !firstItem.dimension ||
+      firstItem.dimension?.includes("/") ||
+      firstItem.dimension?.includes(":")
+    );
+  }, [data]);
+
+  const chartData = useMemo(() => {
+    if (isRawData) {
+      // For raw data: don't group, just sort by timestamp ascending (oldest to newest)
+      return [...data].sort((a, b) => {
+        const timeA = a.time_dimension
+          ? new Date(a.time_dimension).getTime()
+          : 0;
+        const timeB = b.time_dimension
+          ? new Date(b.time_dimension).getTime()
+          : 0;
+        return timeA - timeB;
+      });
+    } else {
+      // For aggregated data: group by time and dimension
+      return groupDataByTimeDimension(data);
+    }
+  }, [data, isRawData]);
+
+  const dimensions = useMemo(() => {
+    if (isRawData) {
+      // For raw data, the metric field is the data key (e.g., "none_rawValue")
+      return ["metric"];
+    } else {
+      return getUniqueDimensions(data);
+    }
+  }, [data, isRawData]);
 
   return (
     <ChartContainer config={config}>
-      <BarChart accessibilityLayer={accessibilityLayer} data={groupedData}>
+      <BarChart accessibilityLayer={accessibilityLayer} data={chartData}>
         <XAxis
           dataKey="time_dimension"
           stroke="hsl(var(--chart-grid))"
@@ -57,6 +95,56 @@ export const VerticalBarChartTimeSeries: React.FC<ChartProps> = ({
         ))}
         <ChartTooltip
           contentStyle={{ backgroundColor: "hsl(var(--background))" }}
+          content={({ active, payload }) => {
+            if (!active || !payload || payload.length === 0) return null;
+
+            // Get the first payload item
+            const data = payload[0];
+            if (!data) return null;
+
+            // Debug logging
+            console.log("VerticalBarChartTimeSeries tooltip data:", {
+              fullPayload: payload,
+              data: data,
+              dataPayload: data.payload,
+              sessionId: data.payload?.sessionId,
+            });
+
+            return (
+              <div className="rounded-lg border bg-background p-2 shadow-sm">
+                <div className="grid gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-[0.70rem] uppercase text-muted-foreground">
+                      Value
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {typeof data.value === "number"
+                        ? data.value.toFixed(4)
+                        : data.value}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[0.70rem] uppercase text-muted-foreground">
+                      Session ID
+                    </span>
+                    <span className="font-mono text-xs">
+                      {data.payload?.sessionId || "No Session attached"}
+                    </span>
+                  </div>
+                  {data.payload?.time_dimension && (
+                    <div className="flex flex-col">
+                      <span className="text-[0.70rem] uppercase text-muted-foreground">
+                        Timestamp
+                      </span>
+                      <span className="text-xs">
+                        {data.payload.time_dimension}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }}
         />
       </BarChart>
     </ChartContainer>

@@ -1278,6 +1278,7 @@ enum DashboardWidgetChartType {
   NUMBER
   HISTOGRAM
   PIVOT_TABLE
+  SCATTER_PLOT
 }
 
 model DashboardWidget {

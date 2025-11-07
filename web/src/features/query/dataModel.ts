@@ -551,6 +551,12 @@ export const scoresNumericView: ViewDeclarationType = {
       type: "number",
       description: "Value of the score.",
     },
+    rawValue: {
+      sql: "value",
+      alias: "rawValue",
+      type: "number",
+      description: "Raw value of the score without aggregation.",
+    },
   },
   tableRelations: {
     traces: {
@@ -654,6 +660,13 @@ export const scoresCategoricalView: ViewDeclarationType = {
       type: "integer",
       description: "Total number of scores.",
       unit: "scores",
+    },
+    rawStringValue: {
+      sql: "string_value",
+      alias: "rawStringValue",
+      type: "string",
+      description:
+        "Raw string value of the categorical score without aggregation.",
     },
   },
   tableRelations: {

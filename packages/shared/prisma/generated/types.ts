@@ -152,6 +152,7 @@ export const DashboardWidgetChartType = {
   NUMBER: "NUMBER",
   HISTOGRAM: "HISTOGRAM",
   PIVOT_TABLE: "PIVOT_TABLE",
+  SCATTER_PLOT: "SCATTER_PLOT",
 } as const;
 export type DashboardWidgetChartType =
   (typeof DashboardWidgetChartType)[keyof typeof DashboardWidgetChartType];

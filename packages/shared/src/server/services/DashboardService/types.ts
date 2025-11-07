@@ -43,6 +43,10 @@ export const PivotTableChartConfig = BaseTotalValueChartConfig.extend({
     .optional(),
 });
 
+export const ScatterPlotChartConfig = BaseTotalValueChartConfig.extend({
+  type: z.literal("SCATTER_PLOT"),
+});
+
 // Define dimension schema
 export const DimensionSchema = z.object({
   field: z.string(),
@@ -64,6 +68,7 @@ export const ChartConfigSchema = z.discriminatedUnion("type", [
   BigNumberChartConfig,
   HistogramChartConfig,
   PivotTableChartConfig,
+  ScatterPlotChartConfig,
 ]);
 
 export const DashboardDefinitionWidgetWidgetSchema = z.object({
