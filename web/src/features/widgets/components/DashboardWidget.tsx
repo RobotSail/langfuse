@@ -15,7 +15,6 @@ import {
   CopyIcon,
   GripVerticalIcon,
   Loader2,
-  ExternalLinkIcon,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useHasProjectAccess } from "@/src/features/rbac/utils/checkProjectAccess";

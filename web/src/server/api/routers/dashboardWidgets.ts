@@ -3,12 +3,7 @@ import {
   createTRPCRouter,
   protectedProjectProcedure,
 } from "@/src/server/api/trpc";
-import {
-  orderBy,
-  singleFilter,
-  optionalPaginationZod,
-  paginationZod,
-} from "@langfuse/shared";
+import { orderBy, singleFilter, optionalPaginationZod } from "@langfuse/shared";
 import { throwIfNoProjectAccess } from "@/src/features/rbac/utils/checkProjectAccess";
 import {
   DashboardWidgetChartType,
@@ -19,8 +14,6 @@ import {
   DimensionSchema,
   MetricSchema,
   ChartConfigSchema,
-  queryClickhouse,
-  convertDateToClickhouseDateTime,
 } from "@langfuse/shared/src/server";
 import { views } from "@/src/features/query";
 import { TRPCError } from "@trpc/server";
