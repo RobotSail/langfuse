@@ -143,7 +143,6 @@ export function DashboardWidget({
     if (!widget.data || !queryResult.data) {
       return [];
     }
-    console.log("DashboardWidget raw query results:", queryResult.data);
 
     const transformed = queryResult.data.map((item: any) => {
       if (widget.data.chartType === "PIVOT_TABLE") {
@@ -206,7 +205,6 @@ export function DashboardWidget({
       };
     });
 
-    console.log("DashboardWidget transformed data:", transformed);
     return transformed;
   }, [queryResult.data, widget.data]);
 
@@ -241,12 +239,6 @@ export function DashboardWidget({
     if (onDeleteWidget && confirm("Please confirm deletion")) {
       onDeleteWidget(placement.id);
     }
-  };
-
-  const handleViewExperiments = () => {
-    router.push(
-      `/project/${projectId}/widgets/${placement.widgetId}/sessions?dashboardId=${dashboardId}`,
-    );
   };
 
   if (widget.isPending) {
@@ -331,21 +323,11 @@ export function DashboardWidget({
           )}
         </div>
       </div>
-      <div className="mb-2 flex items-center justify-between">
-        <div
-          className="truncate text-sm text-muted-foreground"
-          title={widget.data.description}
-        >
-          {widget.data.description}
-        </div>
-        <button
-          onClick={handleViewExperiments}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          aria-label="View experiments"
-        >
-          <span>See Details</span>
-          <ExternalLinkIcon size={12} />
-        </button>
+      <div
+        className="mb-2 truncate text-sm text-muted-foreground"
+        title={widget.data.description}
+      >
+        {widget.data.description}
       </div>
       <div className="min-h-0 flex-1">
         <Chart

@@ -1175,9 +1175,11 @@ export const InnerEvaluatorForm = (props: {
                                       objectName={form.watch(
                                         `mapping.${index}.objectName`,
                                       )}
-                                      selectedColumnId={form.watch(
-                                        `mapping.${index}.selectedColumnId`,
-                                      )}
+                                      selectedColumnId={
+                                        form.watch(
+                                          `mapping.${index}.selectedColumnId`,
+                                        ) ?? undefined
+                                      }
                                       value={field.value}
                                       onChange={field.onChange}
                                     />

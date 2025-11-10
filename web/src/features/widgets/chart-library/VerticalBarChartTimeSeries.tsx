@@ -25,8 +25,6 @@ export const VerticalBarChartTimeSeries: React.FC<ChartProps> = ({
   },
   accessibilityLayer = true,
 }) => {
-  console.log("VerticalBarChartTimeSeries received data:", data);
-
   // Check if this is raw/unaggregated data (dimension field is a timestamp or doesn't exist)
   const isRawData = useMemo(() => {
     if (data.length === 0) return false;
@@ -101,14 +99,6 @@ export const VerticalBarChartTimeSeries: React.FC<ChartProps> = ({
             // Get the first payload item
             const data = payload[0];
             if (!data) return null;
-
-            // Debug logging
-            console.log("VerticalBarChartTimeSeries tooltip data:", {
-              fullPayload: payload,
-              data: data,
-              dataPayload: data.payload,
-              sessionId: data.payload?.sessionId,
-            });
 
             return (
               <div className="rounded-lg border bg-background p-2 shadow-sm">
