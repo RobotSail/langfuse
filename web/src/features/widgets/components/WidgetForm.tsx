@@ -6,6 +6,8 @@ import {
   CardTitle,
   CardFooter,
 } from "@/src/components/ui/card";
+import { Alert, AlertDescription } from "@/src/components/ui/alert";
+import { Info } from "lucide-react";
 import { api } from "@/src/utils/api";
 import {
   metricAggregations,
@@ -102,7 +104,7 @@ const chartTypes: ChartType[] = [
     value: "BAR_TIME_SERIES",
     icon: BarChart,
     supportsBreakdown: true,
-    supportsRawData: true, // Can display individual time points
+    supportsRawData: false, // Requires time-bucketed aggregation
   },
   {
     group: "total-value",
@@ -1454,6 +1456,22 @@ export function WidgetForm({
                   </div>
                 )}
               </div>
+
+              {/* Raw Data Help Text */}
+              {selectedAggregation === "none" && (
+                <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">
+                    <strong>Raw/Unaggregated Data:</strong> You&apos;re viewing
+                    individual data points without aggregation. To improve
+                    performance and readability, it&apos;s{" "}
+                    <strong>strongly recommended</strong> to add filters below
+                    (e.g., filter by &quot;Score Name&quot; to focus on a
+                    specific metric like &quot;helpfulness&quot;). Available
+                    chart types: Scatter Plot, Vertical Bar Chart, Big Number.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {/* Filters Section */}
               <div className="space-y-2">
