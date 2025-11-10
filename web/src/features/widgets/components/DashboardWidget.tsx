@@ -187,7 +187,9 @@ export function DashboardWidget({
         // Raw data - use timestamp if available
         if (item["time_dimension"]) {
           const date = new Date(item["time_dimension"]);
-          dimensionValue = date.toLocaleString();
+          dimensionValue = !isNaN(date.getTime())
+            ? date.toLocaleString()
+            : "N/A";
         }
       } else {
         // Aggregated data without dimension
